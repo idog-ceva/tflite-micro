@@ -15,6 +15,10 @@
 #
 # TFLM Bazel configuration file.
 
+startup --host_jvm_args="-Djavax.net.ssl.trustStore=/usr/lib/jvm/java-8-openjdk-amd64/jre/lib/security/cacerts"
+build --compilation_mode=dbg
+build --copt="-g"
+build --copt="-O0"
 # The semver-format version label embedded in build outputs when and where
 # stamping is used. Note TFLM does not currently publish semver-versioned
 # releases; however, this value is used where a version label is required, such
