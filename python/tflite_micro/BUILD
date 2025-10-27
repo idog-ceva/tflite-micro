@@ -69,12 +69,22 @@ pybind_extension(
     ],
 )
 
+genrule(
+    name = "runtime_ext_for_wheel",
+    srcs = [":_runtime.so"],                # 👈 point at the actual artifact
+    outs = ["_runtime.pyd"],
+    cmd = select({
+        "@platforms//os:windows": "cp -f $(location :_runtime.so) $(@D)/_runtime.pyd",
+        "//conditions:default": "cp -f $(location :_runtime.so) $(@D)/_runtime.so",
+    }),
+)
+
 py_library(
     name = "runtime",
     srcs = [
         "runtime.py",
     ],
-    data = [":_runtime.so"],
+    data = [":runtime_ext_for_wheel"],
     visibility = ["//visibility:public"],
     deps = [
         requirement("numpy"),
@@ -199,6 +209,10 @@ string_flag(
     name = "compatibility_tag",
     build_setting_default = "local",
     values = [
+	    "cp310_cp310_win_amd64",
+        "cp311_cp311_win_amd64",
+        "cp312_cp312_win_amd64",
+        "cp313_cp313_win_amd64",
         "cp310_cp310_manylinux_2_28_x86_64",
         "cp311_cp311_manylinux_2_28_x86_64",
         "cp312_cp312_manylinux_2_28_x86_64",
@@ -242,6 +256,12 @@ config_setting(
     },
 )
 
+
+config_setting(name = "cp310_cp310_win_amd64", flag_values = {":compatibility_tag": "cp310_cp310_win_amd64"})
+config_setting(name = "cp311_cp311_win_amd64", flag_values = {":compatibility_tag": "cp311_cp311_win_amd64"})
+config_setting(name = "cp312_cp312_win_amd64", flag_values = {":compatibility_tag": "cp312_cp312_win_amd64"})
+config_setting(name = "cp313_cp313_win_amd64", flag_values = {":compatibility_tag": "cp313_cp313_win_amd64"})
+
 py_wheel(
     name = "whl",
     # This macro yields additional targets:
@@ -249,6 +269,10 @@ py_wheel(
     # - whl.dist: build a properly named file under whl_dist/
     #
     abi = select({
+	    ":cp310_cp310_win_amd64": "cp310",
+        ":cp311_cp311_win_amd64": "cp311",
+        ":cp312_cp312_win_amd64": "cp312",
+        ":cp313_cp313_win_amd64": "cp313",
         ":cp310_cp310_manylinux_2_28_x86_64": "cp310",
         ":cp311_cp311_manylinux_2_28_x86_64": "cp311",
         ":cp312_cp312_manylinux_2_28_x86_64": "cp312",
@@ -258,6 +282,10 @@ py_wheel(
     description_file = ":description_file",
     distribution = "tflite_micro",
     platform = select({
+	    ":cp310_cp310_win_amd64": "win_amd64",
+        ":cp311_cp311_win_amd64": "win_amd64",
+        ":cp312_cp312_win_amd64": "win_amd64",
+        ":cp313_cp313_win_amd64": "win_amd64",
         ":cp310_cp310_manylinux_2_28_x86_64": "manylinux_2_28_x86_64",
         ":cp311_cp311_manylinux_2_28_x86_64": "manylinux_2_28_x86_64",
         ":cp312_cp312_manylinux_2_28_x86_64": "manylinux_2_28_x86_64",
@@ -265,6 +293,10 @@ py_wheel(
         ":local": "any",
     }),
     python_tag = select({
+	    ":cp310_cp310_win_amd64": "cp310",
+        ":cp311_cp311_win_amd64": "cp311",
+        ":cp312_cp312_win_amd64": "cp312",
+        ":cp313_cp313_win_amd64": "cp313",
         ":cp310_cp310_manylinux_2_28_x86_64": "cp310",
         ":cp311_cp311_manylinux_2_28_x86_64": "cp311",
         ":cp312_cp312_manylinux_2_28_x86_64": "cp312",
