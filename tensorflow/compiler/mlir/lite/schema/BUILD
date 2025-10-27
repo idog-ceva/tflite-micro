@@ -36,6 +36,7 @@ cc_library(
     hdrs = ["schema_utils.h"],
     deps = [
         ":schema_fbs",
+		"//tensorflow/lite/schema:schema_fbs",
         "//tensorflow/compiler/mlir/lite/kernels/internal:compatibility_macros",
         "@flatbuffers//:runtime_cc",
     ],
