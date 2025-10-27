@@ -1,0 +1,44 @@
+to build for windows, do the following:
+
+verify the following individual components are installed (via visual studio 2022):
+
+
+copy and paste to powershell:
+
+# Make sure clang-cl toolchain is on PATH and known
+$env:BAZEL_LLVM = "C:\Program Files\Microsoft Visual Studio\2022\Professional\VC\Tools\Llvm"
+$env:PATH       = "$($env:BAZEL_LLVM)\bin;$env:PATH"
+$env:BAZEL_SH   = "C:\Program Files\Git\bin\bash.exe"
+
+# Remove global MSVC flags that might force 32-bit
+Remove-Item Env:\_CL_ -ErrorAction SilentlyContinue
+Remove-Item Env:\CL   -ErrorAction SilentlyContinue
+
+# (Optional) if these exist, make sure they say x64
+$env:VSCMD_ARG_TGT_ARCH = "x64"
+$env:VSCMD_ARG_HOST_ARCH = "x64"
+
+
+
+copy and past to powershell:
+bazel clean --expunge
+
+bazel build //python/tflite_micro:whl.dist `
+  --config=clangcl `
+  --incompatible_enable_cc_toolchain_resolution=false `
+  --cpu=x64_windows --host_cpu=x64_windows `
+  --action_env=BAZEL_LLVM="C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm" `
+  --action_env=PATH="C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Tools/Llvm/bin;$env:PATH" `
+  --repo_env=BAZEL_SH="C:/Program Files/Git/bin/bash.exe" `
+  --cxxopt=/std:c++17 --cxxopt=/Zc:__cplusplus `
+  --copt=-Wno-unknown-argument  --cxxopt=-Wno-unknown-argument `
+  --copt=-Wno-error             --cxxopt=-Wno-error            --features=-werror `
+  --copt=-Wno-error=unknown-argument --cxxopt=-Wno-error=unknown-argument `
+  --copt=-m64   --cxxopt=-m64   --linkopt=/MACHINE:X64 `
+  --copt=--target=x86_64-pc-windows-msvc   --cxxopt=--target=x86_64-pc-windows-msvc `
+  --host_copt=-m64  --host_cxxopt=-m64  --host_linkopt=/MACHINE:X64 `
+  --host_copt=--target=x86_64-pc-windows-msvc  --host_cxxopt=--target=x86_64-pc-windows-msvc `
+  --stamp --workspace_status_command="powershell -NoProfile -ExecutionPolicy Bypass -File tools/workspace_status.ps1"
+
+
+tested with bazel 7.7.0
