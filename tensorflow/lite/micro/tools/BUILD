@@ -77,6 +77,11 @@ py_test(
     ],
 )
 
+config_setting(
+    name = "windows",
+    constraint_values = ["@platforms//os:windows"],
+)
+
 pybind_extension(
     name = "tflite_flatbuffer_align_wrapper",  # :tflite_flatbuffer_align_wrapper.so
     srcs = [
@@ -88,13 +93,30 @@ pybind_extension(
     ],
 )
 
+# Windows → copy and rename to .pyd
+genrule(
+    name = "align_win",
+    srcs = [":tflite_flatbuffer_align_wrapper.so"],
+    outs = ["tflite_flatbuffer_align_wrapper.pyd"],
+    #cmd  = "cmd.exe /c copy /Y $(location :tflite_flatbuffer_align_wrapper_bin) $@",
+	cmd  = "cp -f $(location :tflite_flatbuffer_align_wrapper.so) $@",
+)
+
+filegroup(
+    name = "tflite_flatbuffer_align_wrapper_artifact",
+    srcs = select({
+        ":windows": [":align_win"],
+        "//conditions:default": [":tflite_flatbuffer_align_wrapper.so"],
+    }),
+)
+
 py_binary(
     name = "tflite_flatbuffer_align",
     srcs = [
         "tflite_flatbuffer_align.py",
     ],
     data = [
-        ":tflite_flatbuffer_align_wrapper.so",
+        ":tflite_flatbuffer_align_wrapper_artifact",
     ],
     deps = [
         requirement("absl_py"),
@@ -105,7 +127,7 @@ py_library(
     name = "model_transforms_utils",
     srcs = ["model_transforms_utils.py"],
     data = [
-        ":tflite_flatbuffer_align_wrapper.so",
+        ":tflite_flatbuffer_align_wrapper_artifact",
     ],
     visibility = [
         ":application_friends",
