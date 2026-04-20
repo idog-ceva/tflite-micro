@@ -125,7 +125,17 @@ try {
     # 5. Build the wheel
     # -----------------------------------------------------------------------
     $CompatTag = "${PythonVersion}_${PythonVersion}_win_amd64"
-    Write-Step "Building wheel with compatibility tag: $CompatTag"
+
+    # Derive dotted Python version from cp-tag (e.g. cp312 -> "3.12")
+    # rules_python requires this to select the correct Python toolchain
+    # and ensure the compiled extension links against the right python3XX.dll.
+    $cpMatch = [regex]::Match($PythonVersion, '^cp(\d)(\d+)$')
+    if (-not $cpMatch.Success) {
+        throw "Cannot derive Python version from tag '$PythonVersion'. Expected format: cpXYZ (e.g. cp312)"
+    }
+    $DottedPyVersion = "$($cpMatch.Groups[1].Value).$($cpMatch.Groups[2].Value)"
+
+    Write-Step "Building wheel with compatibility tag: $CompatTag  (Python $DottedPyVersion)"
 
     $LlvmPathFwd = $LlvmPath -replace '\\', '/'
 
@@ -147,6 +157,11 @@ try {
 
         # Wheel platform tag
         "--//python/tflite_micro:compatibility_tag=$CompatTag"
+
+        # Select the Python toolchain matching the requested version.
+        # Without this flag, rules_python uses its default toolchain (Python 3.13),
+        # causing the .pyd to link against python313.dll even when building for cp312.
+        "--@rules_python//python/config_settings:python_version=$DottedPyVersion"
 
         # LLVM paths for action sandboxes
         "--action_env=BAZEL_LLVM=$LlvmPathFwd"
