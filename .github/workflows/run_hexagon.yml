@@ -1,6 +1,6 @@
 name: Run-Hexagon
 
-# This is the entry point for hexagon.yml for scheduled and workflow_dispatch events. 
+# Entry point for Hexagon tests. Triggered by schedule or workflow_dispatch.
 
 on:
   schedule:
@@ -10,9 +10,13 @@ on:
   # Allow manually triggering of the workflow.
   workflow_dispatch: {}
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
-  call-hexagon:
-    uses: ./.github/workflows/hexagon.yml
+  call-suite-hexagon:
+    uses: ./.github/workflows/suite_hexagon.yml
     if: |
       github.event_name == 'workflow_dispatch' ||
       (github.event_name == 'schedule' && github.repository == 'tensorflow/tflite-micro')
@@ -22,7 +26,7 @@ jobs:
       tflm-bot-token: ${{ secrets.TFLM_BOT_PACKAGE_READ_TOKEN }}
 
   issue-on-error:
-    needs: [call-hexagon]
+    needs: [call-suite-hexagon]
     if: ${{ always() && contains(needs.*.result, 'failure') }}
     uses: ./.github/workflows/issue_on_error.yml
     with:
@@ -30,6 +34,6 @@ jobs:
       workflow: ${{ github.workflow }}
       run_id: ${{ github.run_id }}
       run_number: ${{ github.run_number }}
-      flag_label: ci:bot_issue
+      flag_label: bot:issue
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}

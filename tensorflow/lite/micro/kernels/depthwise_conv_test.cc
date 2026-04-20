@@ -20,8 +20,9 @@ limitations under the License.
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
 #include "tensorflow/lite/micro/kernels/kernel_runner.h"
+#include "tensorflow/lite/micro/micro_arena_constants.h"
 #include "tensorflow/lite/micro/test_helpers.h"
-#include "tensorflow/lite/micro/testing/micro_test.h"
+#include "tensorflow/lite/micro/testing/micro_test_v2.h"
 
 namespace tflite {
 namespace testing {
@@ -79,12 +80,13 @@ constexpr int kOutputElementsQ1 = std::extent<decltype(kGoldenDataQ1)>::value;
 
 // compressed filter data for kBinQuant scheme, matches kFilterDataQ1
 // Align the tensor data the same as a Buffer in the schema
-alignas(16) constexpr uint8_t kBinQuantFilterDataQ1[] = {0x15, 0x6A, 0x8A,
-                                                         0x60};
+alignas(tflite::MicroArenaBufferAlignment()) constexpr uint8_t
+    kBinQuantFilterDataQ1[] = {0x15, 0x6A, 0x8A, 0x60};
 constexpr int kBinQuantFilterBitWidthQ1 = 2;
 // compressed bias data for kBinQuant scheme, matches kBiasDataQ1
 // Align the tensor data the same as a Buffer in the schema
-alignas(16) constexpr uint8_t kBinQuantBiasDataQ1[] = {0x00};
+alignas(tflite::MicroArenaBufferAlignment()) constexpr uint8_t
+    kBinQuantBiasDataQ1[] = {0x00};
 constexpr int kBinQuantBiasBitWidthQ1 = 1;
 
 #endif  // USE_TFLM_COMPRESSION
@@ -96,7 +98,7 @@ constexpr int kBinQuantBiasBitWidthQ1 = 1;
 // The tensors parameter contains both the input tensors as well as a
 // preallocated output tensor into which the output is stored.
 template <typename T, typename TF = void, typename TB = void>
-TfLiteStatus ValidateDepthwiseConvGoldens(
+void ValidateDepthwiseConvGoldens(
     const T* expected_output_data, int output_length,
     TfLiteDepthwiseConvParams* conv_params, float tolerance, int tensors_size,
     TfLiteTensor* tensors
@@ -110,18 +112,15 @@ TfLiteStatus ValidateDepthwiseConvGoldens(
 
   TestCompressedList<kDepthwiseConvMaxInputTensors> tcl;
   if (filter_comp_info != nullptr) {
-    TF_LITE_MICRO_EXPECT_EQ(
+    ASSERT_EQ(
         tcl.AddInput(*filter_comp_info, tensors[kDepthwiseConvWeightsTensor],
                      kDepthwiseConvWeightsTensor),
         kTfLiteOk);
-    TF_LITE_MICRO_CHECK_FAIL();
   }
   if (bias_comp_info != nullptr) {
-    TF_LITE_MICRO_EXPECT_EQ(
-        tcl.AddInput(*bias_comp_info, tensors[kDepthwiseConvBiasTensor],
-                     kDepthwiseConvBiasTensor),
-        kTfLiteOk);
-    TF_LITE_MICRO_CHECK_FAIL();
+    ASSERT_EQ(tcl.AddInput(*bias_comp_info, tensors[kDepthwiseConvBiasTensor],
+                           kDepthwiseConvBiasTensor),
+              kTfLiteOk);
   }
   const CompressedTensorList* comp_list_p = tcl.GetCompressedTensorList();
 
@@ -151,19 +150,14 @@ TfLiteStatus ValidateDepthwiseConvGoldens(
   const char* init_data = reinterpret_cast<const char*>(conv_params);
 
   // TODO(b/154240825): Use a test macro here which fails and returns.
-  TfLiteStatus status = runner.InitAndPrepare(init_data);
-  if (status != kTfLiteOk) {
-    return status;
-  }
-  TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk, runner.Invoke());
+  ASSERT_EQ(runner.InitAndPrepare(init_data), kTfLiteOk);
+  EXPECT_EQ(kTfLiteOk, runner.Invoke());
 
   const T* output_data = tflite::GetTensorData<T>(&tensors[kOutputTensorIndex]);
 
   for (int i = 0; i < output_length; ++i) {
-    TF_LITE_MICRO_EXPECT_NEAR(expected_output_data[i], output_data[i],
-                              tolerance);
+    EXPECT_NEAR(expected_output_data[i], output_data[i], tolerance);
   }
-  return kTfLiteOk;
 }
 
 template <typename T, typename BiasT>
@@ -229,10 +223,9 @@ void TestDepthwiseConvQuantizedPerChannel(
   Quantize(expected_output_data, expected_output_data_quantized,
            output_dims_count, output_scale, output_zero_point);
 
-  TF_LITE_MICRO_EXPECT_EQ(
-      kTfLiteOk, ValidateDepthwiseConvGoldens(expected_output_data_quantized,
-                                              output_dims_count, conv_params,
-                                              1.0, tensors_size, tensors));
+  ValidateDepthwiseConvGoldens(expected_output_data_quantized,
+                               output_dims_count, conv_params, 1.0,
+                               tensors_size, tensors);
 }
 
 void TestDepthwiseConvQuantizedPerChannel(
@@ -274,7 +267,7 @@ void TestDepthwiseConvQuantizedPerChannel(
 #ifdef USE_TFLM_COMPRESSION
 
 template <typename TIO, typename TBIAS>
-TfLiteStatus TestDepthwiseConvQuantizedCompressed(
+void TestDepthwiseConvQuantizedCompressed(
     int* input_dims_data, const float* input_data, TIO* input_quantized,
     float input_scale, int input_zero_point, int* output_dims_data,
     const float* expected_output_data, TIO* expected_output_quantized,
@@ -334,12 +327,36 @@ TfLiteStatus TestDepthwiseConvQuantizedCompressed(
   const int output_dims_count = ElementCount(*output_dims);
   Quantize(expected_output_data, expected_output_quantized, output_dims_count,
            output_scale, output_zero_point);
-  return ValidateDepthwiseConvGoldens(
-      expected_output_quantized, output_dims_count, conv_params, tolerance,
-      tensors_size, tensors, filter_comp_info, bias_comp_info);
+  ValidateDepthwiseConvGoldens(expected_output_quantized, output_dims_count,
+                               conv_params, tolerance, tensors_size, tensors,
+                               filter_comp_info, bias_comp_info);
 }
 
 #endif  // USE_TFLM_COMPRESSION
+
+void ValidateDepthwiseConvFailsDuringPrepare(
+    int tensors_size, TfLiteTensor* tensors,
+    TfLiteDepthwiseConvParams* conv_params) {
+  int inputs_array_data[] = {3, 0, 1, 2};
+  TfLiteIntArray* inputs_array = IntArrayFromInts(inputs_array_data);
+  int outputs_array_data[] = {1, 3};
+  TfLiteIntArray* outputs_array = IntArrayFromInts(outputs_array_data);
+
+  const TFLMRegistration registration = Register_DEPTHWISE_CONV_2D();
+  micro::KernelRunner runner(registration, tensors, tensors_size, inputs_array,
+                             outputs_array,
+                             reinterpret_cast<void*>(conv_params));
+
+  int input_depth = tensors[0].dims->data[3];
+  int output_depth = tensors[1].dims->data[3];
+  int depth_mul = output_depth / input_depth;
+
+  conv_params->padding = kTfLitePaddingValid;
+  conv_params->depth_multiplier = depth_mul;
+
+  const char* init_data = reinterpret_cast<const char*>(conv_params);
+  EXPECT_NE(runner.InitAndPrepare(init_data), kTfLiteOk);
+}
 
 // TODO(ddavis-2015): is this still valid?
 // Xtensa kernels do not support float activations., and the corresponding tests
@@ -389,12 +406,10 @@ void TestDepthwiseConvFloat(
 }  // namespace testing
 }  // namespace tflite
 
-TF_LITE_MICRO_TESTS_BEGIN
-
 #if !defined(XTENSA)  // TODO(b/170322965): xtensa kernels are less general than
                       // reference kernels and we ifdef out test cases that are
                       // currently known to fail.
-TF_LITE_MICRO_TEST(SimpleTest) {
+TEST(DepthwiseConvTest, SimpleTest) {
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {1, 2, 7, 8, 3, 4, 9, 10, 5, 6, 11, 12};
   int filter_shape[] = {4, 1, 2, 2, 4};
@@ -423,7 +438,7 @@ TF_LITE_MICRO_TEST(SimpleTest) {
 
 #ifdef USE_TFLM_COMPRESSION
 
-TF_LITE_MICRO_TEST(SimpleTestCompressed) {
+TEST(DepthwiseConvTest, SimpleTestCompressed) {
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {1, 2, 7, 8, 3, 4, 9, 10, 5, 6, 11, 12};
   int filter_shape[] = {4, 1, 2, 2, 4};
@@ -475,7 +490,7 @@ TF_LITE_MICRO_TEST(SimpleTestCompressed) {
 
 #endif  // USE_TFLM_COMPRESSION
 
-TF_LITE_MICRO_TEST(SimpleTestRelu) {
+TEST(DepthwiseConvTest, SimpleTestRelu) {
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {1, 2, 7, 8, 3, 4, 9, 10, 5, 6, 11, 12};
   int filter_shape[] = {4, 1, 2, 2, 4};
@@ -500,7 +515,7 @@ TF_LITE_MICRO_TEST(SimpleTestRelu) {
       bias_values, golden_relu, output_shape, &conv_params, output_data);
 }
 
-TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelDepthMultiplier1) {
+TEST(DepthwiseConvTest, SimpleTestQuantizedPerChannelDepthMultiplier1) {
   const int input_elements = 12;
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {1, 2, 7, 8, 3, 4, 9, 10, 5, 6, 11, 12};
@@ -545,7 +560,7 @@ TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelDepthMultiplier1) {
       output_scale, output_zero_point, &conv_params);
 }
 
-TF_LITE_MICRO_TEST(TestQuantizedPerChannelDepthMultiplier1Relu6) {
+TEST(DepthwiseConvTest, TestQuantizedPerChannelDepthMultiplier1Relu6) {
   const int input_elements = 24;
   int input_shape[] = {4, 1, 3, 2, 4};
   const float input_values[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -588,7 +603,7 @@ TF_LITE_MICRO_TEST(TestQuantizedPerChannelDepthMultiplier1Relu6) {
       output_scale, output_zero_point, &conv_params);
 }
 
-TF_LITE_MICRO_TEST(SimpleTestDilatedQuantizedPerChannel) {
+TEST(DepthwiseConvTest, SimpleTestDilatedQuantizedPerChannel) {
   const int input_elements = 48;
   int input_shape[] = {4, 1, 4, 6, 2};
   const float input_values[] = {1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,   // h = 0
@@ -634,7 +649,7 @@ TF_LITE_MICRO_TEST(SimpleTestDilatedQuantizedPerChannel) {
       output_scale, output_zero_point, &conv_params);
 }
 
-TF_LITE_MICRO_TEST(TestQuantizedPerChannelCompareWithFloat) {
+TEST(DepthwiseConvTest, TestQuantizedPerChannelCompareWithFloat) {
   int input_dims[] = {4, 1, 2, 3, 2};
   const float input_data[] = {3, 2, 1, -1, -2, -3, 4, 3, 2, -2, -3, -4};
   int filter_dims[] = {4, 1, 2, 2, 4};
@@ -678,7 +693,7 @@ TF_LITE_MICRO_TEST(TestQuantizedPerChannelCompareWithFloat) {
       golden, output_dims, &conv_params, output_float);
 }
 
-TF_LITE_MICRO_TEST(PerChannelBroadcastQuantizationParams) {
+TEST(DepthwiseConvTest, PerChannelBroadcastQuantizationParams) {
   const float input_scale = 1.0f;
   const float filter_scale = 1.0f;
   const float output_scale = 1.0f;
@@ -774,15 +789,14 @@ TF_LITE_MICRO_TEST(PerChannelBroadcastQuantizationParams) {
   conv_params.stride_height = 1;
   conv_params.stride_width = 1;
 
-  TF_LITE_MICRO_EXPECT_EQ(
-      kTfLiteOk, tflite::testing::ValidateDepthwiseConvGoldens(
-                     golden_quantized, output_dims_count, &conv_params, 1e-5,
-                     tensors_size, tensors));
+  tflite::testing::ValidateDepthwiseConvGoldens(golden_quantized,
+                                                output_dims_count, &conv_params,
+                                                1e-5, tensors_size, tensors);
 }
 
 #endif  // !defined(XTENSA)
 
-TF_LITE_MICRO_TEST(FilterDimsNotMatchingAffineQuantization) {
+TEST(DepthwiseConvTest, FilterDimsNotMatchingAffineQuantization) {
   int input_shape[] = {4, 1, 2, 3, 2};
   const float input_data[] = {3, 2, 1, -1, -2, -3, 4, 3, 2, -2, -3, -4};
   int filter_shape[] = {4, 1, 2, 2, 4};
@@ -798,7 +812,6 @@ TF_LITE_MICRO_TEST(FilterDimsNotMatchingAffineQuantization) {
   int8_t input_quantized[input_size];
   int8_t filter_quantized[filter_size];
   int32_t bias_quantized[bias_size];
-  int8_t golden_quantized[output_size] = {};
   int zero_points[bias_size + 1];
   float scales[bias_size + 1];
   int8_t output_data[output_size];
@@ -858,21 +871,17 @@ TF_LITE_MICRO_TEST(FilterDimsNotMatchingAffineQuantization) {
   TfLiteAffineQuantization* quant = reinterpret_cast<TfLiteAffineQuantization*>(
       filter_tensor.quantization.params);
   quant->scale->size = 2;
-  TF_LITE_MICRO_EXPECT_EQ(kTfLiteError,
-                          tflite::testing::ValidateDepthwiseConvGoldens(
-                              golden_quantized, output_size, &conv_params, 1e-5,
-                              tensors_size, tensors));
+  tflite::testing::ValidateDepthwiseConvFailsDuringPrepare(
+      tensors_size, tensors, &conv_params);
 
   // Set scale back to correct dimension, and make zero point array too short.
   quant->scale->size = filter_shape[0];
   quant->zero_point->size = 2;
-  TF_LITE_MICRO_EXPECT_EQ(kTfLiteError,
-                          tflite::testing::ValidateDepthwiseConvGoldens(
-                              golden_quantized, output_size, &conv_params, 1e-5,
-                              tensors_size, tensors));
+  tflite::testing::ValidateDepthwiseConvFailsDuringPrepare(
+      tensors_size, tensors, &conv_params);
 }
 
-TF_LITE_MICRO_TEST(Int8Input32x4Filter32x4ShouldMatchGolden) {
+TEST(DepthwiseConvTest, Int8Input32x4Filter32x4ShouldMatchGolden) {
   const int input_elements = 32 * 4;
   const int filter_elements = 32 * 4;
   const int bias_elements = 32;
@@ -928,7 +937,7 @@ TF_LITE_MICRO_TEST(Int8Input32x4Filter32x4ShouldMatchGolden) {
 
   // Quantization Parameters.  All scales except output are 1.0, and all zero
   // points are 0. This direct-maps the values to floating point and makes it
-  // easy to reson about them.
+  // easy to reason about them.
   const float input_scale = 0.058824;
   const float filter_scale = 0.003301;
   const float output_scale = 0.092596;
@@ -1024,7 +1033,7 @@ TF_LITE_MICRO_TEST(Int8Input32x4Filter32x4ShouldMatchGolden) {
       kTensorsSize, tensors);
 }
 
-TF_LITE_MICRO_TEST(Int8Input32x1Filter32x1ShouldMatchGolden) {
+TEST(DepthwiseConvTest, Int8Input32x1Filter32x1ShouldMatchGolden) {
   const int input_elements = 32 * 1;
   const int filter_elements = 32 * 1;
   const int bias_elements = 32;
@@ -1056,7 +1065,7 @@ TF_LITE_MICRO_TEST(Int8Input32x1Filter32x1ShouldMatchGolden) {
 
   // Quantization Parameters.  All scales except output are 1.0, and all zero
   // points are 0. This direct-maps the values to floating point and makes it
-  // easy to reson about them.
+  // easy to reason about them.
   const float input_scale = 0.058824;
   const float filter_scale = 0.003301;
   const float output_scale = 0.092596;
@@ -1147,10 +1156,9 @@ TF_LITE_MICRO_TEST(Int8Input32x1Filter32x1ShouldMatchGolden) {
   conv_params.dilation_height_factor = 1;
   conv_params.stride_height = 2;
   conv_params.stride_width = 2;
-  TF_LITE_MICRO_EXPECT_EQ(kTfLiteOk,
-                          tflite::testing::ValidateDepthwiseConvGoldens(
-                              golden_quantized, output_elements, &conv_params,
-                              kQuantizationTolerance, kTensorsSize, tensors));
+  tflite::testing::ValidateDepthwiseConvGoldens(
+      golden_quantized, output_elements, &conv_params, kQuantizationTolerance,
+      kTensorsSize, tensors);
 }
 
 // TODO(b/268384678): xtensa vision p6 kernels break
@@ -1161,7 +1169,7 @@ TF_LITE_MICRO_TEST(Int8Input32x1Filter32x1ShouldMatchGolden) {
 // handcrafting filter values within the int4 range, and the golden data was
 // obtained by running TestDepthwiseConvQuantizedPerChannel() with int8
 // quantization, and ensuring that int4 quantization yields the same outputs.
-TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt4Filter) {
+TEST(DepthwiseConvTest, SimpleTestQuantizedPerChannelInt4Filter) {
   const int input_elements = 12;
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {1, 2, 7, 8, 3, 4, 9, 10, 5, 6, 11, 12};
@@ -1204,7 +1212,7 @@ TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt4Filter) {
       output_scale, output_zero_point, &conv_params, kTfLiteInt4);
 }
 
-TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannel) {
+TEST(DepthwiseConvTest, SimpleTestQuantizedPerChannel) {
   const int input_elements = 12;
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {1, 2, 7, 8, 3, 4, 9, 10, 5, 6, 11, 12};
@@ -1247,7 +1255,7 @@ TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannel) {
       output_scale, output_zero_point, &conv_params);
 }
 
-TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt16InputInt8Filter) {
+TEST(DepthwiseConvTest, SimpleTestQuantizedPerChannelInt16InputInt8Filter) {
   const int input_elements = 12;
   int input_shape[] = {4, 1, 3, 2, 2};
   const float input_values[] = {-547, 108, -682, 540,  -161, -539, 9,    -482,
@@ -1293,7 +1301,7 @@ TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt16InputInt8Filter) {
 
 #ifdef USE_TFLM_COMPRESSION
 
-TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt8Compressed) {
+TEST(DepthwiseConvTest, SimpleTestQuantizedPerChannelInt8Compressed) {
   // data from TfLite test:
   // PerChannelQuantizedDepthwiseConvolutionOpTest SimpleTestMixedOutputShift
   const float input_scale = 0.5f;
@@ -1350,17 +1358,15 @@ TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt8Compressed) {
 
   // tolerance of 3 is approx. 2.0f
   // TODO(ddavis-2015): why does the tolerance differ from TfLite test???
-  TF_LITE_MICRO_EXPECT_EQ(
-      kTfLiteOk,
-      tflite::testing::TestDepthwiseConvQuantizedCompressed(
-          tflite::testing::kInputShapeQ1, tflite::testing::kInputDataQ1,
-          input_quantized, input_scale, input_zero_point,
-          tflite::testing::kOutputShapeQ1, tflite::testing::kGoldenDataQ1,
-          golden_quantized, output_quantized, output_scale, output_zero_point,
-          &conv_params, 3, &filter_comp_info, &bias_comp_info));
+  tflite::testing::TestDepthwiseConvQuantizedCompressed(
+      tflite::testing::kInputShapeQ1, tflite::testing::kInputDataQ1,
+      input_quantized, input_scale, input_zero_point,
+      tflite::testing::kOutputShapeQ1, tflite::testing::kGoldenDataQ1,
+      golden_quantized, output_quantized, output_scale, output_zero_point,
+      &conv_params, 3, &filter_comp_info, &bias_comp_info);
 }
 
-TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt16Compressed) {
+TEST(DepthwiseConvTest, SimpleTestQuantizedPerChannelInt16Compressed) {
   // data from TfLite test:
   // PerChannelQuantizedDepthwiseConvolutionOpTest SimpleTestMixedOutputShift
   const float input_scale =
@@ -1418,16 +1424,14 @@ TF_LITE_MICRO_TEST(SimpleTestQuantizedPerChannelInt16Compressed) {
   conv_params.stride_width = 1;
 
   // tolerance of 512 is approx. 1.0f
-  TF_LITE_MICRO_EXPECT_EQ(
-      kTfLiteOk,
-      tflite::testing::TestDepthwiseConvQuantizedCompressed(
-          tflite::testing::kInputShapeQ1, tflite::testing::kInputDataQ1,
-          input_quantized, input_scale, input_zero_point,
-          tflite::testing::kOutputShapeQ1, tflite::testing::kGoldenDataQ1,
-          golden_quantized, output_quantized, output_scale, output_zero_point,
-          &conv_params, 512, &filter_comp_info, &bias_comp_info));
+  tflite::testing::TestDepthwiseConvQuantizedCompressed(
+      tflite::testing::kInputShapeQ1, tflite::testing::kInputDataQ1,
+      input_quantized, input_scale, input_zero_point,
+      tflite::testing::kOutputShapeQ1, tflite::testing::kGoldenDataQ1,
+      golden_quantized, output_quantized, output_scale, output_zero_point,
+      &conv_params, 512, &filter_comp_info, &bias_comp_info);
 }
 
 #endif  // USE_TFLM_COMPRESSION
 
-TF_LITE_MICRO_TESTS_END
+TF_LITE_MICRO_TESTS_MAIN

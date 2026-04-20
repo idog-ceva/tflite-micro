@@ -97,9 +97,20 @@ namespace tflite {
 class SharedLibrary {
  public:
   static inline void* GetSymbol(const char* symbol) {
+#if defined(_WIN32)
+    return reinterpret_cast<void*>(
+        GetProcAddress(GetModuleHandle(NULL), symbol));
+#else
     return dlsym(RTLD_DEFAULT, symbol);
+#endif  // defined(_WIN32)
   }
-  static inline const char* GetError() { return dlerror(); }
+  static inline const char* GetError() {
+#if defined(_WIN32)
+    return "Unknown error";
+#else
+    return dlerror();
+#endif  // defined(_WIN32)
+  }
 };
 
 }  // namespace tflite

@@ -82,10 +82,12 @@ _TESTED_SIMPLE_OPS = [
     schema_py_generated.BuiltinOperator.LOGISTIC,
     schema_py_generated.BuiltinOperator.MEAN,
     schema_py_generated.BuiltinOperator.MUL,
+    schema_py_generated.BuiltinOperator.PACK,
     schema_py_generated.BuiltinOperator.PAD,
     schema_py_generated.BuiltinOperator.QUANTIZE,
     schema_py_generated.BuiltinOperator.RESHAPE,
     schema_py_generated.BuiltinOperator.RSQRT,
+    schema_py_generated.BuiltinOperator.SHAPE,
     schema_py_generated.BuiltinOperator.SQRT,
     schema_py_generated.BuiltinOperator.SQUARED_DIFFERENCE,
     schema_py_generated.BuiltinOperator.STRIDED_SLICE,
@@ -204,7 +206,7 @@ class Requantizer:
       )
 
   def save_model(self, output_path):
-    """Save the requantized model to a specificed location."""
+    """Save the requantized model to a specified location."""
     flatbuffer_utils.write_model(self.model, output_path)
 
   def model_bytearray(self):

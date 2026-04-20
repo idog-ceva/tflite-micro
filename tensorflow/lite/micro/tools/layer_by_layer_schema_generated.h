@@ -22,9 +22,9 @@ limitations under the License.
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 23 &&
-              FLATBUFFERS_VERSION_MINOR == 5 &&
-              FLATBUFFERS_VERSION_REVISION == 26,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 25 &&
+              FLATBUFFERS_VERSION_MINOR == 9 &&
+              FLATBUFFERS_VERSION_REVISION == 23,
              "Non-compatible flatbuffers version included");
 
 struct TensorData;
@@ -60,11 +60,12 @@ enum TensorTypes : int8_t {
   TensorTypes_INT4 = 17,
   TensorTypes_BFLOAT16 = 18,
   TensorTypes_INT2 = 19,
+  TensorTypes_UINT4 = 20,
   TensorTypes_MIN = TensorTypes_FLOAT32,
-  TensorTypes_MAX = TensorTypes_INT2
+  TensorTypes_MAX = TensorTypes_UINT4
 };
 
-inline const TensorTypes (&EnumValuesTensorTypes())[20] {
+inline const TensorTypes (&EnumValuesTensorTypes())[21] {
   static const TensorTypes values[] = {
     TensorTypes_FLOAT32,
     TensorTypes_FLOAT16,
@@ -85,13 +86,14 @@ inline const TensorTypes (&EnumValuesTensorTypes())[20] {
     TensorTypes_UINT16,
     TensorTypes_INT4,
     TensorTypes_BFLOAT16,
-    TensorTypes_INT2
+    TensorTypes_INT2,
+    TensorTypes_UINT4
   };
   return values;
 }
 
 inline const char * const *EnumNamesTensorTypes() {
-  static const char * const names[21] = {
+  static const char * const names[22] = {
     "FLOAT32",
     "FLOAT16",
     "INT32",
@@ -112,13 +114,14 @@ inline const char * const *EnumNamesTensorTypes() {
     "INT4",
     "BFLOAT16",
     "INT2",
+    "UINT4",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameTensorTypes(TensorTypes e) {
-  if (::flatbuffers::IsOutRange(e, TensorTypes_FLOAT32, TensorTypes_INT2)) return "";
+  if (::flatbuffers::IsOutRange(e, TensorTypes_FLOAT32, TensorTypes_UINT4)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesTensorTypes()[index];
 }
@@ -493,7 +496,7 @@ inline SubgraphDataT *SubgraphData::UnPack(const ::flatbuffers::resolver_functio
 inline void SubgraphData::UnPackTo(SubgraphDataT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = outputs(); if (_e) { _o->outputs.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->outputs[_i]) { _e->Get(_i)->UnPackTo(_o->outputs[_i].get(), _resolver); } else { _o->outputs[_i] = std::unique_ptr<TensorDataT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->outputs.resize(0); } }
+  { auto _e = outputs(); if (_e) { _o->outputs.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->outputs[_i]) { _e->Get(_i)->UnPackTo(_o->outputs[_i].get(), _resolver); } else { _o->outputs[_i] = std::unique_ptr<TensorDataT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->outputs.resize(0); } }
   { auto _e = subgraph_index(); _o->subgraph_index = _e; }
 }
 
@@ -535,8 +538,8 @@ inline ModelTestDataT *ModelTestData::UnPack(const ::flatbuffers::resolver_funct
 inline void ModelTestData::UnPackTo(ModelTestDataT *_o, const ::flatbuffers::resolver_function_t *_resolver) const {
   (void)_o;
   (void)_resolver;
-  { auto _e = input_data(); if (_e) { _o->input_data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->input_data[_i]) { _e->Get(_i)->UnPackTo(_o->input_data[_i].get(), _resolver); } else { _o->input_data[_i] = std::unique_ptr<TensorDataT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->input_data.resize(0); } }
-  { auto _e = subgraph_data(); if (_e) { _o->subgraph_data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->subgraph_data[_i]) { _e->Get(_i)->UnPackTo(_o->subgraph_data[_i].get(), _resolver); } else { _o->subgraph_data[_i] = std::unique_ptr<SubgraphDataT>(_e->Get(_i)->UnPack(_resolver)); }; } } else { _o->subgraph_data.resize(0); } }
+  { auto _e = input_data(); if (_e) { _o->input_data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->input_data[_i]) { _e->Get(_i)->UnPackTo(_o->input_data[_i].get(), _resolver); } else { _o->input_data[_i] = std::unique_ptr<TensorDataT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->input_data.resize(0); } }
+  { auto _e = subgraph_data(); if (_e) { _o->subgraph_data.resize(_e->size()); for (::flatbuffers::uoffset_t _i = 0; _i < _e->size(); _i++) { if(_o->subgraph_data[_i]) { _e->Get(_i)->UnPackTo(_o->subgraph_data[_i].get(), _resolver); } else { _o->subgraph_data[_i] = std::unique_ptr<SubgraphDataT>(_e->Get(_i)->UnPack(_resolver)); } } } else { _o->subgraph_data.resize(0); } }
 }
 
 inline ::flatbuffers::Offset<ModelTestData> ModelTestData::Pack(::flatbuffers::FlatBufferBuilder &_fbb, const ModelTestDataT* _o, const ::flatbuffers::rehasher_function_t *_rehasher) {

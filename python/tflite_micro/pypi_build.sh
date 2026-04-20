@@ -63,6 +63,7 @@ IMAGE_ID=$(cat $IMAGE_ID_FILE)
 
 # Build the Python package within an ephemeral container.
 docker run \
+    --init \
     --rm \
     --interactive \
     --mount type=bind,source=$SRCDIR,destination=$SRCDIR \
@@ -91,7 +92,7 @@ docker run \
     export XDG_CACHE_HOME=$OUTDIR/cache
 
     # Relocate the bazel root to keep the cache used for each Python toolchain
-    # separate. Drop root privledges and run as the invoking user.
+    # separate. Drop root privileges and run as the invoking user.
     call_bazel() {
         setpriv --reuid=$(id -u) --regid=$(id -g) --clear-groups \
             bazel \

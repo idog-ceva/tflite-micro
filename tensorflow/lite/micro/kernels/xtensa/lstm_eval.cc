@@ -49,7 +49,7 @@ LstmTensors::~LstmTensors() {
 }
 
 // Verify the LSTM internal tensor properties (e.g., type checks)
-// Input/output/states/fc weights tensors are required for kernel evaulation.
+// Input/output/states/fc weights tensors are required for kernel evaluation.
 // The state tensors should be variables. Variants of the standard LSTM
 // are not supported here, therefore their corresponding tensors should be
 // invalid
@@ -473,7 +473,8 @@ void LstmStepManager::UpdateBatch() {
 // Multi-batch for time_major input
 RuntimeShape LstmStepManager::InputShape() const {
   int batch_size = 1;
-  if (size_info_.time_major) {
+  if (size_info_.time_major ||
+      (size_info_.batch_size > 1 && size_info_.time_steps == 1)) {
     batch_size = size_info_.batch_size;
   }
   const int dims[2] = {batch_size, size_info_.input_dimension};
@@ -485,7 +486,8 @@ RuntimeShape LstmStepManager::InputShape() const {
 // Multi-batch for time_major input
 RuntimeShape LstmStepManager::StateShape() const {
   int batch_size = 1;
-  if (size_info_.time_major) {
+  if (size_info_.time_major ||
+      (size_info_.batch_size > 1 && size_info_.time_steps == 1)) {
     batch_size = size_info_.batch_size;
   }
   const int dims[2] = {batch_size, size_info_.state_dimension};
