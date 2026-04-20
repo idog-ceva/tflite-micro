@@ -6,8 +6,38 @@ Prerequisites (install via Visual Studio 2022):
   - C++ Clang-cl for v143 build tools (x64/x86)
   - Git for Windows (provides bash.exe)
   - Python 3.12 (installed to C:\Python\Python312 or adjust paths below)
-  - Bazel 8.5.1 (must match .bazelversion)
+  - Bazelisk on PATH (https://github.com/bazelbuild/bazelisk/releases)
+    Bazelisk automatically downloads the correct Bazel version from .bazelversion.
+    The recommended install is to place bazelisk.exe somewhere on your PATH
+    (e.g. C:\opt\bazelisk.exe). Do NOT install a fixed Bazel version manually.
 
+
+Option A — Build script (recommended)
+--------------------------------------
+The script tools/build_whl_windows.ps1 handles all environment setup and
+invokes bazelisk with the correct flags.
+
+Usage:
+
+  # Default: Python 3.12 wheel, full clean
+  powershell -ExecutionPolicy Bypass -File tools\build_whl_windows.ps1
+
+  # Different Python version
+  powershell -ExecutionPolicy Bypass -File tools\build_whl_windows.ps1 -PythonVersion cp313
+
+  # Skip bazel clean --expunge for faster incremental rebuilds
+  powershell -ExecutionPolicy Bypass -File tools\build_whl_windows.ps1 -SkipClean
+
+  # Custom LLVM path (e.g. VS Community edition)
+  powershell -ExecutionPolicy Bypass -File tools\build_whl_windows.ps1 `
+    -LlvmPath "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\Llvm"
+
+The output wheel will be in bazel-bin/python/tflite_micro/whl_dist/.
+
+
+Option B — Manual build
+------------------------
+If you prefer to run the commands manually:
 
 Step 1 — Set up environment. Copy and paste to PowerShell:
 
@@ -26,7 +56,7 @@ $env:VSCMD_ARG_HOST_ARCH = "x64"
 
 Step 2 — Build the wheel. Copy and paste to PowerShell:
 
-bazel clean --expunge
+bazelisk clean --expunge
 
 bazelisk build //python/tflite_micro:whl.dist `
   --config=clangcl `
@@ -45,4 +75,4 @@ The output wheel will be in bazel-bin/python/tflite_micro/whl_dist/.
 For other Python versions, replace cp312 with cp310, cp311, or cp313 in the
 compatibility_tag value.
 
-Tested with Bazel 8.5.1
+Tested with Bazel 8.5.1 (via Bazelisk)
