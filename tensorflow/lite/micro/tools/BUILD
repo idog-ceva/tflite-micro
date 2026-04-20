@@ -94,28 +94,10 @@ pybind_extension(
     srcs = [
         "tflite_flatbuffer_align_wrapper.cc",
     ],
-    target_compatible_with = INCOMPATIBLE_WITH_WINDOWS,
     deps = [
         "//tensorflow/lite/schema:schema_fbs",
         "@flatbuffers",
     ],
-)
-
-# Windows → copy and rename to .pyd
-genrule(
-    name = "align_win",
-    srcs = [":tflite_flatbuffer_align_wrapper.so"],
-    outs = ["tflite_flatbuffer_align_wrapper.pyd"],
-    #cmd  = "cmd.exe /c copy /Y $(location :tflite_flatbuffer_align_wrapper_bin) $@",
-	cmd  = "cp -f $(location :tflite_flatbuffer_align_wrapper.so) $@",
-)
-
-filegroup(
-    name = "tflite_flatbuffer_align_wrapper_artifact",
-    srcs = select({
-        ":windows": [":align_win"],
-        "//conditions:default": [":tflite_flatbuffer_align_wrapper.so"],
-    }),
 )
 
 py_binary(
@@ -124,9 +106,8 @@ py_binary(
         "tflite_flatbuffer_align.py",
     ],
     data = [
-        ":tflite_flatbuffer_align_wrapper_artifact",
+        ":tflite_flatbuffer_align_wrapper",
     ],
-    target_compatible_with = INCOMPATIBLE_WITH_WINDOWS,
     deps = [
         requirement("absl_py"),
     ],

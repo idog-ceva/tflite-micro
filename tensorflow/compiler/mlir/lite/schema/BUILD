@@ -39,7 +39,6 @@ cc_library(
     ],
     deps = [
         ":schema_fbs",
-		"//tensorflow/lite/schema:schema_fbs",
         "//tensorflow/compiler/mlir/lite/kernels/internal:compatibility_macros",
         "//tensorflow/lite/schema:schema_fbs",
         "@flatbuffers//:runtime_cc",

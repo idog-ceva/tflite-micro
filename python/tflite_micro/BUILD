@@ -70,22 +70,12 @@ pybind_extension(
     ],
 )
 
-genrule(
-    name = "runtime_ext_for_wheel",
-    srcs = [":_runtime.so"],                # 👈 point at the actual artifact
-    outs = ["_runtime.pyd"],
-    cmd = select({
-        "@platforms//os:windows": "cp -f $(location :_runtime.so) $(@D)/_runtime.pyd",
-        "//conditions:default": "cp -f $(location :_runtime.so) $(@D)/_runtime.so",
-    }),
-)
-
 py_library(
     name = "runtime",
     srcs = [
         "runtime.py",
     ],
-    data = [":runtime_ext_for_wheel"],
+    data = [":_runtime"],
     visibility = ["//visibility:public"],
     deps = [
         "//:tflite_micro_shim",
