@@ -88,3 +88,16 @@ message(STATUS "model_runner: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERS
 message(STATUS "model_runner: TFLM sources = ${TFLM_ROOT}")
 list(LENGTH TFLM_SOURCES _n_tflm_sources)
 message(STATUS "model_runner: ${_n_tflm_sources} TFLM .cc files in tflm_micro")
+
+# Mirror compile_commands.json into the source directory so clangd's default
+# discovery finds it without needing OS-specific paths in .clangd. The file is
+# already in .gitignore.
+add_custom_target(copy_compile_commands ALL
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${CMAKE_BINARY_DIR}/compile_commands.json"
+    "${CMAKE_SOURCE_DIR}/compile_commands.json"
+  BYPRODUCTS "${CMAKE_SOURCE_DIR}/compile_commands.json"
+  COMMENT "Updating ${CMAKE_SOURCE_DIR}/compile_commands.json for clangd"
+  VERBATIM
+)
+add_dependencies(copy_compile_commands model_runner)

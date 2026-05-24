@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug model_runner (Linux gdb)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/linux-gcc-debug/model_runner",
+      "args": ["${input:modelPath}"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "preLaunchTask": "build",
+      "setupCommands": [
+        { "text": "set debuginfod enabled off", "ignoreFailures": true },
+        { "description": "Pretty-print", "text": "-enable-pretty-printing", "ignoreFailures": true }
+      ]
+    },
+    {
+      "name": "Debug model_runner (Windows MinGW gdb)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/windows-mingw-debug/model_runner.exe",
+      "args": ["${input:modelPath}"],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb.exe",
+      "preLaunchTask": "build",
+      "setupCommands": [
+        { "description": "Pretty-print", "text": "-enable-pretty-printing", "ignoreFailures": true }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "modelPath",
+      "type": "promptString",
+      "description": "Path to .tflite model"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+# clangd configuration for model_runner.
+#
+# The build copies compile_commands.json from the active build dir to this
+# source directory (see CMakeLists.txt: copy_compile_commands target), so a
+# single relative path works regardless of which preset / OS produced it.
+
+CompileFlags:
+  CompilationDatabase: .

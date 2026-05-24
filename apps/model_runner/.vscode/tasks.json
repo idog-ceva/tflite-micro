@@ -1,0 +1,76 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "linux-gcc-debug"],
+      "windows": {
+        "args": ["--preset", "windows-mingw-debug"]
+      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "shared" }
+    },
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "linux-gcc-debug"],
+      "windows": {
+        "args": ["--build", "--preset", "windows-mingw-debug"]
+      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "build", "isDefault": true },
+      "dependsOn": ["configure"],
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "always", "panel": "shared", "clear": true }
+    },
+    {
+      "label": "configure: linux-gcc-release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "linux-gcc-release"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: linux-gcc-release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "linux-gcc-release"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": ["configure: linux-gcc-release"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "configure: windows-mingw-release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--preset", "windows-mingw-release"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    },
+    {
+      "label": "build: windows-mingw-release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "--preset", "windows-mingw-release"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "dependsOn": ["configure: windows-mingw-release"],
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "clean (debug)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-E", "rm", "-rf", "build/linux-gcc-debug"],
+      "windows": {
+        "args": ["-E", "rm", "-rf", "build/windows-mingw-debug"]
+      },
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": []
+    }
+  ]
+}

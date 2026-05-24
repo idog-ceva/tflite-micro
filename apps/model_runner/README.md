@@ -63,6 +63,7 @@ Available presets:
 | `linux-gcc-debug`         | Linux   | gcc                      | Debug      |
 | `linux-gcc-release`       | Linux   | gcc                      | Release    |
 | `linux-clang-release`     | Linux   | clang                    | Release    |
+| `windows-mingw-debug`     | Windows | MinGW-w64 gcc (MSYS2)    | Debug      |
 | `windows-mingw-release`   | Windows | MinGW-w64 gcc (MSYS2)    | Release    |
 | `windows-clang-release`   | Windows | clang (MSYS2 / LLVM)     | Release    |
 
@@ -197,33 +198,87 @@ Force the arena auto-grow path (start small, watch it ratchet up):
 
 ## 5. VSCode
 
-Open the `apps/model_runner` folder in VSCode. With the recommended
-extensions installed (`ms-vscode.cmake-tools`,
-`llvm-vs-code-extensions.vscode-clangd`), CMake Tools picks up
-`CMakePresets.json` automatically:
+### 5.1 Open
 
-1. **Ctrl+Shift+P → CMake: Select Configure Preset** → pick e.g.
-   `linux-gcc-debug`.
-2. **CMake: Build** (or F7).
-3. **Run and Debug** → pick *Debug model_runner (Linux gdb)*; you'll be
-   prompted for the model path.
+The fastest path is to open the multi-root workspace file, which gives you
+both the app folder and the full repo in the file explorer:
 
-Two debug launch configurations are pre-wired in `.vscode/launch.json` —
-Linux (gdb) against `build/linux-gcc-debug/`, and Windows MinGW (gdb)
-against `build/windows-mingw-release/`. Both prompt for the model path on
-launch.
+```
+File → Open Workspace from File... → apps/model_runner/model_runner.code-workspace
+```
 
-The repo's parent `.gitignore` excludes `.vscode/`, so these files are not
-committed. They live in the local working tree as a convenience for opening
-the app in VSCode.
+If you'd rather just see the app, `File → Open Folder...` →
+`apps/model_runner/` works too — the same launch/task configs apply.
+
+On first open, VSCode will offer the recommended extensions:
+
+- `ms-vscode.cmake-tools` — preset-aware CMake integration
+- `llvm-vs-code-extensions.vscode-clangd` — code intelligence
+
+Install both.
+
+### 5.2 Build (Ctrl+Shift+B)
+
+The default `build` task picks the debug preset for the current OS:
+
+- Linux → `linux-gcc-debug`
+- Windows → `windows-mingw-debug`
+
+It auto-configures if the build directory doesn't exist yet (`dependsOn:
+configure`), so a fresh clone works on the first keystroke. Other build
+tasks (`build: linux-gcc-release`, `build: windows-mingw-release`, …) are
+available via `Tasks: Run Task`.
+
+### 5.3 Debug (F5)
+
+Run-and-Debug → **Debug model_runner (Linux gdb)** (or the MinGW one on
+Windows). VSCode will:
+
+1. Prompt for a `.tflite` model path.
+2. Run the `build` task as `preLaunchTask` — same cross-OS task as
+   Ctrl+Shift+B, so you always debug the freshly built binary against the
+   current OS's debug preset.
+3. Launch under `gdb`, stopping at any breakpoints you've set.
+
+Set breakpoints anywhere in `src/*.cc` or in the TFLM sources — clangd
+exposes the full TFLM compilation database, so `Go to Definition` works
+into the framework as well as the app.
+
+### 5.4 What ships in `.vscode/` and `.clangd`
+
+- `.vscode/tasks.json` — cross-OS `build` + `configure` tasks (with
+  `windows` overrides selecting the MinGW preset), plus explicit
+  per-preset variants
+- `.vscode/launch.json` — Linux gdb + Windows MinGW gdb launches, both
+  wired to auto-build via `preLaunchTask: build`
+- `.vscode/settings.json` — CMake-Tools preset mode, disables MS C/C++
+  IntelliSense in favor of clangd, and sets the Windows integrated
+  terminal to **MSYS2 MinGW64 bash** so tasks see the right `PATH`
+  (`cmake`/`gcc`/`ninja`/`patch`). Adjust the `path` entry if MSYS2
+  isn't at `C:\msys64`
+- `.vscode/extensions.json` — recommended extensions
+- `.clangd` — `CompilationDatabase: .` ; the build's
+  `copy_compile_commands` target mirrors the active preset's
+  `compile_commands.json` into the source root, so the same `.clangd`
+  works for any OS / preset
+
+The repo-root `.gitignore` excludes `.vscode/` and `.clangd` everywhere;
+this app overrides that locally via `apps/model_runner/.gitignore` (with
+`!.vscode/` and `!.clangd`) so the setup is committed and travels with
+clones.
 
 ---
 
 ## 6. Windows gotchas
 
-- Use the **MSYS2 MinGW64** shell for the `windows-mingw-release` preset.
-  The plain MSYS2 or UCRT64 shells use a different gcc identity than the
-  preset detects.
+- Use the **MSYS2 MinGW64** shell for the `windows-mingw-*` presets from
+  the CLI. The plain MSYS2 or UCRT64 shells use a different gcc identity
+  than the preset detects.
+- In VSCode the equivalent is the bundled
+  `terminal.integrated.defaultProfile.windows = "MSYS2 MinGW64"` setting
+  (see section 5.4) — without it, tasks running in PowerShell or cmd.exe
+  won't find `cmake`/`gcc`/`ninja`/`patch`. Edit the profile's `path` if
+  MSYS2 isn't at `C:\msys64`.
 - `patch` is required at build time. On MSYS2 it's the `patch` package.
 - The MinGW build statically links `libstdc++` and `libgcc` so the
   resulting `.exe` runs without copying MSYS2 DLLs.

@@ -1,2 +1,7 @@
 build/
 compile_commands.json
+
+# Override the repo-root .gitignore for this app so the per-app VSCode setup
+# (launch configs, tasks, recommended extensions, clangd hint) is tracked.
+!.vscode/
+!.clangd

@@ -1,0 +1,26 @@
+{
+  "cmake.useCMakePresets": "always",
+  "cmake.sourceDirectory": "${workspaceFolder}",
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.cStandard": "c11",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "files.associations": {
+    "*.inc": "cpp"
+  },
+
+  // Windows: VSCode tasks spawn the integrated terminal, so cmake/gcc/ninja/
+  // patch must be on PATH there. Default to MSYS2 MinGW64 bash. Adjust the
+  // "path" entry below if MSYS2 is installed somewhere other than C:\msys64.
+  "terminal.integrated.defaultProfile.windows": "MSYS2 MinGW64",
+  "terminal.integrated.profiles.windows": {
+    "MSYS2 MinGW64": {
+      "path": "C:\\msys64\\usr\\bin\\bash.exe",
+      "args": ["--login", "-i"],
+      "env": {
+        "MSYSTEM": "MINGW64",
+        "CHERE_INVOKING": "1"
+      },
+      "icon": "terminal-bash"
+    }
+  }
+}
