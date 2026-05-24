@@ -1,6 +1,9 @@
 {
   "cmake.useCMakePresets": "always",
   "cmake.sourceDirectory": "${workspaceFolder}",
+  "cmake.environment": {
+    "PATH": "C:\\msys64\\mingw64\\bin;C:\\msys64\\usr\\bin;${env:PATH}"
+  },
   "C_Cpp.default.cppStandard": "c++17",
   "C_Cpp.default.cStandard": "c11",
   "C_Cpp.intelliSenseEngine": "disabled",

@@ -25,20 +25,37 @@ sudo apt install cmake ninja-build git patch build-essential clang
 
 ### Windows (MSYS2 / MinGW-w64)
 
-Open the **MSYS2 MinGW64** shell (not the plain MSYS2 or UCRT64 shells) and:
+Install [MSYS2](https://www.msys2.org/), then open the **MSYS2 MinGW64** shell
+(not the plain MSYS2 or UCRT64 shells) and run:
 
 ```sh
 pacman -S --needed \
   mingw-w64-x86_64-gcc \
+  mingw-w64-x86_64-gdb \
   mingw-w64-x86_64-clang \
   mingw-w64-x86_64-ninja \
   mingw-w64-x86_64-cmake \
   patch
 ```
 
+| Package | Purpose |
+|---|---|
+| `mingw-w64-x86_64-gcc` | C/C++ compiler (`gcc`, `g++`) |
+| `mingw-w64-x86_64-gdb` | Debugger (`gdb`) — required for F5 in VS Code |
+| `mingw-w64-x86_64-clang` | Only needed for the `windows-clang-release` preset |
+| `mingw-w64-x86_64-ninja` | Build system (`ninja`) |
+| `mingw-w64-x86_64-cmake` | Build configurator — or install via `pip install cmake` |
+| `patch` | GNU patch — applies source patches during configure |
+
 No MSVC, no clang-cl. Run all `cmake` commands from the MinGW64 shell so
 that `gcc`, `g++`, `ninja`, `cmake`, and `patch` resolve to the MinGW
 versions on `PATH`.
+
+> **VS Code users:** the `.vscode/settings.json` in this folder injects
+> `C:\msys64\mingw64\bin` and `C:\msys64\usr\bin` into the CMake Tools
+> process environment so configure and debug work without modifying your
+> system PATH. If MSYS2 is installed somewhere other than `C:\msys64`,
+> update the `cmake.environment.PATH` value in `.vscode/settings.json`.
 
 ### Network
 
@@ -314,6 +331,15 @@ apps/model_runner/
 
 **"patch: command not found"** — install GNU `patch`
 (`sudo apt install patch` on Debian/Ubuntu, `pacman -S patch` on MSYS2).
+
+**"Unable to start debugging … program exited with code 0xc0000135"** —
+a required MinGW runtime DLL wasn't found when GDB launched the executable.
+Make sure `C:\msys64\mingw64\bin` is in `PATH` for the debugger process. In
+VS Code this is handled by the `environment` entry in `.vscode/launch.json`;
+if you moved MSYS2, update that path too.
+
+**"MIDebuggerPath is not found"** — `gdb.exe` is missing. Install it with
+`pacman -S mingw-w64-x86_64-gdb` in the MSYS2 MinGW64 shell.
 
 **"Failed to allocate tail memory. Requested: N, available M, missing: K"** —
 the arena is too small for your model. Either:
