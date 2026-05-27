@@ -76,11 +76,14 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   )
 endif()
 
-# MinGW: link the C++ runtime statically so the .exe is self-contained.
+# MinGW: link all runtime libraries statically so the .exe is self-contained.
+# Plain -static (rather than just -static-libgcc/-static-libstdc++) is required
+# to also pull in libwinpthread-1.dll, which MinGW-w64's POSIX-threaded
+# libgcc/libstdc++ depend on; otherwise the .exe fails to run with a missing
+# libwinpthread-1.dll error.
 if(MINGW)
   target_link_options(model_runner PRIVATE
-    -static-libgcc
-    -static-libstdc++
+    -static
   )
 endif()
 
