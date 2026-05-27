@@ -39,7 +39,7 @@ void PrintUsage() {
     "  --arena=BYTES             initial arena size (default: 1048576)\n"
     "  --arena-max=BYTES         arena auto-grow cap (default: 67108864)\n"
     "  --iterations=N            run inference N times (default: 1)\n"
-    "  --output=DIR              write output_<i>.bin into DIR (default: .)\n"
+    "  --output=DIR              write <model>_output_<i>.bin into DIR (default: .)\n"
     "  -h, --help                show this message\n");
 }
 
@@ -187,11 +187,13 @@ int main(int argc, char** argv) {
   // --- Outputs ---
   std::error_code ec;
   fs::create_directories(args.output_dir, ec);
+  const std::string model_name = fs::path(args.model).filename().string();
   std::printf("outputs: %zu\n", n_out);
   for (size_t i = 0; i < n_out; ++i) {
     TfLiteTensor* t = runner.Output(i);
     PrintTensor("output", i, runner.OutputName(i), t);
-    fs::path p = fs::path(args.output_dir) / ("output_" + std::to_string(i) + ".bin");
+    fs::path p = fs::path(args.output_dir) /
+                 (model_name + "_output_" + std::to_string(i) + ".bin");
     if (!model_runner::WriteFile(p.string(), t->data.raw, t->bytes)) return 1;
     std::printf("wrote: %s\n", p.string().c_str());
   }
