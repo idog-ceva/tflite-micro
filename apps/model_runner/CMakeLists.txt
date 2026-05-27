@@ -39,6 +39,12 @@ target_compile_definitions(tflm_micro
     TF_LITE_USE_CTIME
 )
 
+# MSVC: compile the (many) TFLM .cc files in parallel within the project.
+# Without /MP, the Visual Studio generator compiles one file at a time.
+if(MSVC)
+  target_compile_options(tflm_micro PRIVATE /MP)
+endif()
+
 # TFLM is widely warning-noisy under recent gcc/clang. Don't fail on it.
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(tflm_micro PRIVATE
@@ -67,6 +73,10 @@ add_executable(model_runner
 
 target_include_directories(model_runner PRIVATE src)
 target_link_libraries(model_runner PRIVATE tflm_micro)
+
+if(MSVC)
+  target_compile_options(model_runner PRIVATE /MP)
+endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(model_runner PRIVATE
