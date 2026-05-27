@@ -76,6 +76,17 @@
         "CMAKE_C_COMPILER": "clang",
         "CMAKE_CXX_COMPILER": "clang++"
       }
+    },
+    {
+      "name": "windows-vs2022",
+      "displayName": "Windows Visual Studio 2022 (MSVC, .sln)",
+      "inherits": "base",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" },
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "cacheVariables": {
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+      }
     }
   ],
   "buildPresets": [
@@ -84,6 +95,8 @@
     { "name": "linux-clang-release",   "configurePreset": "linux-clang-release" },
     { "name": "windows-mingw-debug",   "configurePreset": "windows-mingw-debug" },
     { "name": "windows-mingw-release", "configurePreset": "windows-mingw-release" },
-    { "name": "windows-clang-release", "configurePreset": "windows-clang-release" }
+    { "name": "windows-clang-release", "configurePreset": "windows-clang-release" },
+    { "name": "windows-vs2022-debug",   "configurePreset": "windows-vs2022", "configuration": "Debug" },
+    { "name": "windows-vs2022-release", "configurePreset": "windows-vs2022", "configuration": "Release" }
   ]
 }

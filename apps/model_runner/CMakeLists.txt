@@ -95,12 +95,17 @@ message(STATUS "model_runner: ${_n_tflm_sources} TFLM .cc files in tflm_micro")
 # Mirror compile_commands.json into the source directory so clangd's default
 # discovery finds it without needing OS-specific paths in .clangd. The file is
 # already in .gitignore.
-add_custom_target(copy_compile_commands ALL
-  COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    "${CMAKE_BINARY_DIR}/compile_commands.json"
-    "${CMAKE_SOURCE_DIR}/compile_commands.json"
-  BYPRODUCTS "${CMAKE_SOURCE_DIR}/compile_commands.json"
-  COMMENT "Updating ${CMAKE_SOURCE_DIR}/compile_commands.json for clangd"
-  VERBATIM
-)
-add_dependencies(copy_compile_commands model_runner)
+#
+# Only Makefile/Ninja generators emit compile_commands.json; the Visual Studio
+# generator does not, so skip the copy there to avoid a missing-file build error.
+if(NOT CMAKE_GENERATOR MATCHES "Visual Studio")
+  add_custom_target(copy_compile_commands ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${CMAKE_BINARY_DIR}/compile_commands.json"
+      "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    BYPRODUCTS "${CMAKE_SOURCE_DIR}/compile_commands.json"
+    COMMENT "Updating ${CMAKE_SOURCE_DIR}/compile_commands.json for clangd"
+    VERBATIM
+  )
+  add_dependencies(copy_compile_commands model_runner)
+endif()
