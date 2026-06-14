@@ -169,6 +169,20 @@ int main(int argc, char** argv) {
     }
   }
 
+  // Save generated inputs so the run is reproducible.
+  if (args.inputs.empty()) {
+    std::error_code ec;
+    fs::create_directories(args.output_dir, ec);
+    const std::string model_name_pre = fs::path(args.model).filename().string();
+    for (size_t i = 0; i < n_in; ++i) {
+      TfLiteTensor* t = runner.Input(i);
+      fs::path p = fs::path(args.output_dir) /
+                   (model_name_pre + "_input_" + std::to_string(i) + ".bin");
+      if (!model_runner::WriteFile(p.string(), t->data.raw, t->bytes)) return 1;
+      std::printf("saved input: %s\n", p.string().c_str());
+    }
+  }
+
   // --- Invoke ---
   using clock = std::chrono::steady_clock;
   double total_ms = 0.0;
